@@ -27,7 +27,7 @@ func main() {
 
 	go func() {
 		for i := 0; i < 30; i++ {
-			task := npd.MakeTask(npd.TASK_NORMAL, NewMyTask(i, "execute demo"), "DoSNMP")
+			task := npd.CreateTask(NewMyTask(i, "execute demo"), "DoSNMP")
 			d.SubmitTask(task)
 		}
 		fmt.Println("Tasks sent.")
@@ -36,8 +36,6 @@ func main() {
 
 	wg.Wait()
 	fmt.Println("All tasks are done")
-
-	select {}
 
 }
 

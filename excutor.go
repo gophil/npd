@@ -43,6 +43,7 @@ func (e *Executor) Start() {
 			case task := <-e.TaskChan:
 				e.idle = false
 				if task.Type == TASK_NORMAL {
+					//通过反射调用任务函数
 					reflect.ValueOf(*task.TargetObj).MethodByName(task.TargetFunc).Call([]reflect.Value{})
 				}
 				e.idle = true

@@ -21,7 +21,7 @@ func main() {
 	defer d.Stop()
 
 	for i := 0; i < 30; i++ {
-		task := npd.MakeTask(npd.TASK_NORMAL, NewMyTask(i, "execute demo"), "DoSNMP")
+		task := npd.CreateTask(NewMyTask(i, "execute demo"), "DoSNMP")
 		d.SubmitTask(task)
 	}
 

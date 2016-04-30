@@ -16,6 +16,17 @@ type Task struct {
 	TargetFunc string
 }
 
+func CreateTask(targetObj interface{}, targetFunc string) Task {
+	uuid, _ := GenerateUUID()
+	t := Task{
+		TaskId:     uuid,
+		TargetObj:  &targetObj,
+		TargetFunc: targetFunc,
+	}
+	t.Type = TASK_NORMAL
+	return t
+}
+
 //创建任务
 func MakeTask(taskType TaskType, targetObj interface{}, targetFunc string) Task {
 	uuid, _ := GenerateUUID()

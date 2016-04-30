@@ -4,10 +4,13 @@ a simple network task dispatcher
 
 How to use it ?
 
-1. execute a simple task
+`Examples: `
+
+1.execute a simple task
 
 ```go
-    import (
+    
+   import (
         "fmt"
         "github.com/gophil/npd"
         _ "net/http/pprof"
@@ -53,10 +56,11 @@ How to use it ?
 ```
 
 
-2.  execute a simple task with waiting group
+2.execute a simple task with waiting group
 
 ```go
-    import (
+    
+   import (
         "fmt"
         "github.com/gophil/npd"
         _ "net/http/pprof"
@@ -103,8 +107,6 @@ How to use it ?
 
         wg.Wait()
         fmt.Println("All tasks are done")
-
-        select {}
 
     }
 
