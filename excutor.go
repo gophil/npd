@@ -44,7 +44,7 @@ func (e *Executor) Start() {
 				e.idle = false
 				if task.Type == TASK_NORMAL {
 					//通过反射调用任务函数
-					reflect.ValueOf(*task.TargetObj).MethodByName(task.TargetFunc).Call([]reflect.Value{})
+					e.Call(task)
 				}
 				e.idle = true
 				if e.wait {
@@ -65,4 +65,37 @@ func (e *Executor) Stop() bool {
 		return true
 	}
 	return false
+}
+
+//任务方法调用
+func (e *Executor) Call(task Task) []interface{} {
+	out := reflect.ValueOf(*task.TargetObj).MethodByName(task.TargetFunc).Call([]reflect.Value{})
+
+	if len(out) == 0 {
+		return nil
+	}
+
+	outArgs := make([]interface{}, len(out))
+	for i := 0; i < len(outArgs); i++ {
+		outArgs[i] = out[i].Interface()
+	}
+	lastParamter := out[len(out)-1].Interface()
+	//判断最后的返回参数是否为error类型
+	if lastParamter != nil {
+		if e, ok := lastParamter.(error); ok {
+			//最后的返回结果为错误类型,且不为空的情况(可能需要最错误重试)
+			outArgs[len(out)-1] = ExeError{e.Error()}
+		} else {
+			println("final param must be error")
+		}
+	}
+	return outArgs
+}
+
+type ExeError struct {
+	Message string
+}
+
+func (r ExeError) Error() string {
+	return r.Message
 }

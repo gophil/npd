@@ -12,6 +12,18 @@ type MyTask struct {
 	message string
 }
 
+func NewMyTask(number int, message string) *MyTask {
+	return &MyTask{
+		number:  number,
+		message: message,
+	}
+}
+
+func (m *MyTask) DoSNMP() error {
+	fmt.Println(m.message, " -------> ", m.number)
+	return nil
+}
+
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -21,21 +33,11 @@ func main() {
 	defer d.Stop()
 
 	for i := 0; i < 30; i++ {
-		task := npd.CreateTask(NewMyTask(i, "execute demo"), "DoSNMP")
+		targetObject := NewMyTask(i, "execute demo")
+		task := npd.CreateTask(targetObject, "DoSNMP")
 		d.SubmitTask(task)
 	}
 
 	select {}
 
-}
-
-func NewMyTask(number int, message string) *MyTask {
-	return &MyTask{
-		number:  number,
-		message: message,
-	}
-}
-
-func (m *MyTask) DoSNMP() {
-	fmt.Println(m.message, " -> ", m.number)
 }

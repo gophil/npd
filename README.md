@@ -1,12 +1,19 @@
 ## npd
 
-a simple network task dispatcher
+一个简单的自定义任务分发模块
 
-How to use it ?
 
-`Examples: `
+`安装第三方依赖`
 
-1.execute a simple task
+*   > go get github.com/cihub/seelog
+
+
+
+###如何使用 ?
+
+`Example: `
+
+1.执行一个简单的任务
 
 ```go
     
@@ -56,7 +63,7 @@ How to use it ?
 ```
 
 
-2.execute a simple task with waiting group
+2.执行一个带等待的任务
 
 ```go
     
@@ -110,5 +117,47 @@ How to use it ?
 
     }
 
+
+```
+
+
+####自定义任务结构与方法说明
+
+```go
+//任务对象需要struct类型, 不支持interface类型
+type Custom struct {
+    
+}
+```
+
+
+####结构体接收方法为无入参的方法
+
+eg:
+
+```go
+
+func (c *Custom) foo() {
+    
+    ...
+}
+
+```
+
+####方法只支持无返回值和错误类型返回值的形式
+
+eg:
+
+```go
+
+func (c *Custom) foo2() {
+    
+    ...
+}
+
+func (c *Custom) foo2() error {
+    
+    ...
+}
 
 ```
