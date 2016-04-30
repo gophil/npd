@@ -30,12 +30,12 @@ func main() {
 			task := npd.CreateTask(NewMyTask(i, "execute demo"), "DoSNMP")
 			d.SubmitTask(task)
 		}
-		fmt.Println("Tasks sent.")
+		fmt.Println("tasks are submit ")
 		wg.Done()
 	}()
 
 	wg.Wait()
-	fmt.Println("All tasks are done")
+	fmt.Println("all tasks are finished")
 
 }
 

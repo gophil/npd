@@ -101,12 +101,12 @@ How to use it ?
                 task := npd.MakeTask(npd.TASK_NORMAL, NewMyTask(i, "execute demo"), "DoSNMP")
                 d.SubmitTask(task)
             }
-            fmt.Println("Tasks sent.")
+            fmt.Println("tasks are submit ")
             wg.Done()
         }()
 
         wg.Wait()
-        fmt.Println("All tasks are done")
+        fmt.Println("all tasks are finished")
 
     }
 
