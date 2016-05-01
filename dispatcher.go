@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+type MF func(task Task)
+
 //任务分发器
 type Dispatcher struct {
 	maxExecutors    int
@@ -19,6 +21,7 @@ type Dispatcher struct {
 	openmq          bool
 	messagePipeline chan Task //消息管道
 	mpwg            *sync.WaitGroup
+	messageFunc     MF
 }
 
 //创建分发器
@@ -51,9 +54,15 @@ func NewDispatcherWithWait(maxExecutors, queueBufferSize int, wg *sync.WaitGroup
 
 func NewDispatcherWithMQ(maxExecutors, queueBufferSize int, wg *sync.WaitGroup, mpwg *sync.WaitGroup) *Dispatcher {
 	dispatcher := NewDispatcherWithWait(maxExecutors, queueBufferSize, wg)
+
+	dispatcher.SetMF(func(task Task) {
+		println("data send>>>")
+	})
+
 	dispatcher.openmq = true
 	dispatcher.mpwg = mpwg
 	dispatcher.messagePipeline = make(chan Task, maxExecutors) //初始化消息管道
+
 	return dispatcher
 }
 
@@ -126,7 +135,8 @@ func (dispatcher *Dispatcher) report() {
 	for {
 		select {
 		case messageTask := <-dispatcher.messagePipeline:
-			println("消息上报:", messageTask.TaskId)
+			f := dispatcher.messageFunc
+			f(messageTask)
 			dispatcher.mpwg.Done()
 		case <-dispatcher.quit:
 			return
@@ -147,4 +157,9 @@ func (dispatcher *Dispatcher) shutdown() {
 //停止开关
 func (dispatcher *Dispatcher) Stop() {
 	dispatcher.quit <- true
+}
+
+//设置消息处理方法
+func (dispatcher *Dispatcher) SetMF(mf MF) {
+	dispatcher.messageFunc = mf
 }

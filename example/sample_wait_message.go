@@ -12,20 +12,20 @@ import (
 )
 
 type MyTask struct {
-	number  int
-	message string
+	Number  int
+	Message string
 }
 
 func NewMyTask(number int, message string) *MyTask {
 	return &MyTask{
-		number:  number,
-		message: message,
+		Number:  number,
+		Message: message,
 	}
 }
 
 func (m *MyTask) DoSNMP() {
 	time.Sleep(500 * time.Millisecond)
-	fmt.Println(m.message, " -> ", m.number)
+	fmt.Println(m.Message, " -> ", m.Number)
 }
 
 var (
@@ -48,6 +48,12 @@ func main() {
 
 	d := npd.NewDispatcherWithMQ(num, num, &wg, &mpwg)
 
+	//设置消息发送函数
+	d.SetMF(func(task npd.Task) {
+		no := (*task.TargetObj).(*MyTask)
+		println("处理数据上报:", no.Number)
+	})
+
 	d.Run()
 	defer d.Stop()
 
@@ -55,7 +61,7 @@ func main() {
 	mpwg.Add(1)
 
 	go func() {
-		for i := 0; i < 30; i++ {
+		for i := 0; i < 530; i++ {
 			task := npd.CreateTask(NewMyTask(i, "execute demo"), "DoSNMP")
 			d.SubmitTask(task)
 		}
