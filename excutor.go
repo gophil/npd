@@ -7,22 +7,25 @@ import (
 
 //执行器结构
 type Executor struct {
-	TaskPool chan chan Task //任务池
-	TaskChan chan Task      //任务通道
-	wg       *sync.WaitGroup
-	quit     chan bool
-	wait     bool
-	idle     bool //是否空闲
+	TaskPool   chan chan Task //任务池
+	TaskChan   chan Task      //任务通道
+	wg         *sync.WaitGroup
+	quit       chan bool
+	wait       bool
+	idle       bool //是否空闲
+	mq         chan Task
+	use_report bool
 }
 
 //构建执行器
 func NewExecutor(taskPool chan chan Task) Executor {
 	return Executor{
-		TaskPool: taskPool,
-		TaskChan: make(chan Task),
-		wait:     false,
-		quit:     make(chan bool),
-		idle:     false,
+		TaskPool:   taskPool,
+		TaskChan:   make(chan Task),
+		wait:       false,
+		quit:       make(chan bool),
+		idle:       false,
+		use_report: false,
 	}
 }
 
@@ -31,6 +34,15 @@ func NewExecutorWithWait(taskPool chan chan Task, wg *sync.WaitGroup) Executor {
 	t := NewExecutor(taskPool)
 	t.wg = wg
 	t.wait = true
+	return t
+}
+
+func NewExecutorWithMQ(taskPool chan chan Task, mq chan Task, wg *sync.WaitGroup) Executor {
+	t := NewExecutor(taskPool)
+	t.wg = wg
+	t.wait = true
+	t.mq = mq
+	t.use_report = true
 	return t
 }
 
@@ -45,6 +57,10 @@ func (e *Executor) Start() {
 				if task.Type == TASK_NORMAL {
 					//通过反射调用任务函数
 					e.Call(task)
+					//任务上报
+					if e.use_report {
+						e.Report(task)
+					}
 				}
 				e.idle = true
 				if e.wait {
@@ -70,7 +86,6 @@ func (e *Executor) Stop() bool {
 //任务方法调用
 func (e *Executor) Call(task Task) []interface{} {
 	out := reflect.ValueOf(*task.TargetObj).MethodByName(task.TargetFunc).Call([]reflect.Value{})
-
 	if len(out) == 0 {
 		return nil
 	}
@@ -90,6 +105,11 @@ func (e *Executor) Call(task Task) []interface{} {
 		}
 	}
 	return outArgs
+}
+
+//消息上报
+func (e *Executor) Report(task Task) {
+	e.mq <- task
 }
 
 type ExeError struct {

@@ -16,6 +16,9 @@ type Dispatcher struct {
 	executors       []Executor
 	quit            chan bool
 	limiter         <-chan time.Time
+	openmq          bool
+	messagePipeline chan Task //消息管道
+	mpwg            *sync.WaitGroup
 }
 
 //创建分发器
@@ -27,6 +30,7 @@ func NewDispatcher(maxExecutors, queueBufferSize int) *Dispatcher {
 		wait:            false,
 		quit:            make(chan bool),
 		executors:       make([]Executor, maxExecutors),
+		openmq:          false,
 	}
 
 	if queueBufferSize != 0 {
@@ -45,9 +49,22 @@ func NewDispatcherWithWait(maxExecutors, queueBufferSize int, wg *sync.WaitGroup
 	return dispatcher
 }
 
+func NewDispatcherWithMQ(maxExecutors, queueBufferSize int, wg *sync.WaitGroup, mpwg *sync.WaitGroup) *Dispatcher {
+	dispatcher := NewDispatcherWithWait(maxExecutors, queueBufferSize, wg)
+	dispatcher.openmq = true
+	dispatcher.mpwg = mpwg
+	dispatcher.messagePipeline = make(chan Task, maxExecutors) //初始化消息管道
+	return dispatcher
+}
+
 func (dispatcher *Dispatcher) SubmitTask(task Task) {
 	if dispatcher.wait {
 		dispatcher.wg.Add(1)
+
+		if dispatcher.openmq {
+			dispatcher.mpwg.Add(1)
+		}
+
 	}
 	dispatcher.taskQueue <- task
 }
@@ -56,7 +73,11 @@ func (dispatcher *Dispatcher) Run() {
 
 	for i := 0; i < dispatcher.maxExecutors; i++ {
 		if dispatcher.wait {
-			dispatcher.executors[i] = NewExecutorWithWait(dispatcher.taskPool, dispatcher.wg)
+			if !dispatcher.openmq {
+				dispatcher.executors[i] = NewExecutorWithWait(dispatcher.taskPool, dispatcher.wg)
+			} else {
+				dispatcher.executors[i] = NewExecutorWithMQ(dispatcher.taskPool, dispatcher.messagePipeline, dispatcher.wg)
+			}
 		} else {
 			dispatcher.executors[i] = NewExecutor(dispatcher.taskPool)
 		}
@@ -64,8 +85,14 @@ func (dispatcher *Dispatcher) Run() {
 		dispatcher.executors[i].Start()
 	}
 
-	//开启调度
+	//开启任务分发
 	go dispatcher.dispatch()
+
+	//消息上报
+	if dispatcher.openmq {
+		go dispatcher.report()
+	}
+
 }
 
 func (dispatcher *Dispatcher) RunWithLimiter(limiterGap time.Duration) {
@@ -73,7 +100,7 @@ func (dispatcher *Dispatcher) RunWithLimiter(limiterGap time.Duration) {
 	dispatcher.Run()
 }
 
-//分发处理
+//任务分发处理
 func (dispatcher *Dispatcher) dispatch() {
 	defer dispatcher.shutdown()
 	for {
@@ -94,6 +121,19 @@ func (dispatcher *Dispatcher) dispatch() {
 	}
 }
 
+//消息上报
+func (dispatcher *Dispatcher) report() {
+	for {
+		select {
+		case messageTask := <-dispatcher.messagePipeline:
+			println("消息上报:", messageTask.TaskId)
+			dispatcher.mpwg.Done()
+		case <-dispatcher.quit:
+			return
+		}
+	}
+}
+
 func (dispatcher *Dispatcher) shutdown() {
 	for _, e := range dispatcher.executors {
 		for !e.Stop() { //一直处理停止
@@ -101,6 +141,7 @@ func (dispatcher *Dispatcher) shutdown() {
 	}
 	close(dispatcher.taskPool)
 	close(dispatcher.taskQueue)
+	close(dispatcher.messagePipeline)
 }
 
 //停止开关

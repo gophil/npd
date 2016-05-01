@@ -60,7 +60,7 @@ func init() {
 }
 
 func (self *Logger) Infoln(v ...interface{}) {
-	self.LOG.Info(v)
+	self.LOG.Info(v...)
 }
 
 func (self *Logger) Infof(format string, params ...interface{}) {
