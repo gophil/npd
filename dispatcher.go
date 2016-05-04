@@ -56,7 +56,7 @@ func NewDispatcherWithMQ(maxExecutors, queueBufferSize int, wg *sync.WaitGroup, 
 	dispatcher := NewDispatcherWithWait(maxExecutors, queueBufferSize, wg)
 
 	dispatcher.SetMF(func(task Task) {
-		println("data send>>>")
+		println("no data sent")
 	})
 
 	dispatcher.openmq = true
@@ -136,8 +136,13 @@ func (dispatcher *Dispatcher) report() {
 		select {
 		case messageTask := <-dispatcher.messagePipeline:
 			f := dispatcher.messageFunc
-			f(messageTask)
-			dispatcher.mpwg.Done()
+
+			//并行处理数据上报
+			go func() {
+				f(messageTask)
+				dispatcher.mpwg.Done()
+			}()
+
 		case <-dispatcher.quit:
 			return
 		}

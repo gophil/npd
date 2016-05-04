@@ -61,7 +61,7 @@ func main() {
 	mpwg.Add(1)
 
 	go func() {
-		for i := 0; i < 530; i++ {
+		for i := 0; i < 400; i++ {
 			task := npd.CreateTask(NewMyTask(i, "execute demo"), "DoSNMP")
 			d.SubmitTask(task)
 		}
