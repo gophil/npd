@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gophil/npd"
+	"io/ioutil"
+	"net/http"
 	_ "net/http/pprof"
 	"runtime"
 	"strconv"
@@ -23,9 +25,20 @@ func NewMyTask(number int, message string) *MyTask {
 	}
 }
 
+func TestAKBS() string {
+	resp, _ := http.Get("http://localhost:8080/snmp")
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	return string(body)
+}
+
 func (m *MyTask) DoSNMP() {
-	time.Sleep(500 * time.Millisecond)
-	fmt.Println(m.Message, " -> ", m.Number)
+
+	data := m.Message
+	time.Sleep(200 * time.Millisecond)
+	data = TestAKBS()
+
+	fmt.Println(m.Message, " -> ", data)
 }
 
 var (
@@ -51,9 +64,11 @@ func main() {
 	//设置消息发送函数
 	d.SetMF(func(task npd.Task) {
 		no := (*task.TargetObj).(*MyTask)
+		time.Sleep(200 * time.Millisecond)
 		println("处理数据上报:", no.Number)
 	})
 
+	//d.RunWithLimiter(1 * time.Millisecond)
 	d.Run()
 	defer d.Stop()
 
@@ -61,7 +76,7 @@ func main() {
 	mpwg.Add(1)
 
 	go func() {
-		for i := 0; i < 400; i++ {
+		for i := 0; i < 500; i++ {
 			task := npd.CreateTask(NewMyTask(i, "execute demo"), "DoSNMP")
 			d.SubmitTask(task)
 		}

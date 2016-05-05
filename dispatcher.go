@@ -37,7 +37,7 @@ func NewDispatcher(maxExecutors, queueBufferSize int) *Dispatcher {
 	}
 
 	if queueBufferSize != 0 {
-		dispatcher.taskQueue = make(chan Task, maxExecutors)
+		dispatcher.taskQueue = make(chan Task, queueBufferSize)
 	} else {
 		dispatcher.taskQueue = make(chan Task)
 	}
