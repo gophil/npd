@@ -22,6 +22,7 @@ type Dispatcher struct {
 	messagePipeline chan Task //消息管道
 	mpwg            *sync.WaitGroup
 	messageFunc     MF
+	priority        uint64 //优先执行数
 }
 
 //创建分发器
@@ -78,6 +79,14 @@ func (dispatcher *Dispatcher) SubmitTask(task Task) {
 	dispatcher.taskQueue <- task
 }
 
+//设置优先执行数
+func (dispatcher *Dispatcher) SetPriority(num int) {
+	if num < 0 {
+		num = 0
+	}
+	dispatcher.priority = uint64(num)
+}
+
 func (dispatcher *Dispatcher) Run() {
 
 	for i := 0; i < dispatcher.maxExecutors; i++ {
@@ -112,13 +121,18 @@ func (dispatcher *Dispatcher) RunWithLimiter(limiterGap time.Duration) {
 //任务分发处理
 func (dispatcher *Dispatcher) dispatch() {
 	defer dispatcher.shutdown()
+	index := uint64(0)
 	for {
+		if dispatcher.priority >= 0 {
+			index++
+		}
 		select {
 		case task := <-dispatcher.taskQueue:
 
 			executorTaskChan := <-dispatcher.taskPool
 
-			if dispatcher.limiter != nil {
+			if dispatcher.limiter != nil && index > dispatcher.priority {
+				index = dispatcher.priority //防止index越界
 				<-dispatcher.limiter
 			}
 

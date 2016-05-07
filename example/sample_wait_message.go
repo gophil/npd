@@ -35,7 +35,6 @@ func TestAKBS() string {
 func (m *MyTask) DoSNMP() {
 
 	data := m.Message
-	time.Sleep(200 * time.Millisecond)
 	data = TestAKBS()
 
 	fmt.Println(m.Message, " -> ", data)
@@ -60,6 +59,7 @@ func main() {
 	var mpwg sync.WaitGroup
 
 	d := npd.NewDispatcherWithMQ(num, num, &wg, &mpwg)
+	d.SetPriority(10)
 
 	//设置消息发送函数
 	d.SetMF(func(task npd.Task) {
@@ -68,8 +68,8 @@ func main() {
 		println("处理数据上报:", no.Number)
 	})
 
-	//d.RunWithLimiter(1 * time.Millisecond)
-	d.Run()
+	d.RunWithLimiter(1000 * time.Millisecond)
+	//d.Run()
 	defer d.Stop()
 
 	wg.Add(1)
